@@ -1,0 +1,242 @@
+---
+title: "Linear Regression"
+author: "Aditi Chaudhari"
+date: "2022-09-25"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Linear Regression
+
+Linear regression is a type of machine learning model which seeks to find a relationship between x (the predictor variables) and y (the target variable) in a data set. The model generally takes the form y = wx + b, with w being the slope in which a change in x corresponds to a change in y and b being the intercept. Linear regression is an important machine learning model because it is relatively simple due to the fact that the coefficients can quantify the effect that the predictor variables have on the target variable, it works well if the data follows a linear pattern, and it has low variance. However, a weakness of linear regression is that it has high bias due to the fact that it assumes that the data is in a linear shape. It is important to consider the strengths and weaknesses of the linear regression model prior to using it. 
+
+## Data Exploration
+
+Let's delve into exploring the linear regression model. 
+
+Here, the data stored in the flights.csv file is read into a data frame. The data set is from https://www.kaggle.com/datasets/lcsldatasets/flights
+
+```{r readCSV}
+df <- read.csv("flights.csv")
+```
+
+
+Next, the data randomly divided into a training set containing 80% of the original data and a test set containing 20% of the original data.
+```{r test/trainSplit}
+i <- sample(1:nrow(df), nrow(df) * 0.80, replace = FALSE)
+train <- df[i,]
+test <- df[-i,] 
+```
+
+
+After dividing the data into a training set and a test set, we can explore the data using the training set.
+
+Firstly, let's simply see what our data looks like using the head() function, which selects the first n rows of a data frame.
+```{r}
+head(train, n=10)
+```
+Using the summary() function in R provides us with summary statistics for each column. 
+
+```{r}
+summary(train)
+```
+We also want to see how big this data frame is. 
+
+Using the nrow() function reveals that there are 19,999 observations.  
+```{r}
+nrow(train)
+```
+The ncol() function reveals that there are 9 variables.
+
+```{r}
+ncol(train)
+```
+Using the str() function, we can see the structure of the data frame. This function reveals that all of the variables are of type integer, which is ideal for linear regression.  
+```{r}
+str(train)
+```
+Using the colSums() function, we can see that there are no missing values in any of the columns. It is important to remove missing values prior to performing linear regression.
+```{r}
+colSums(is.na(train))
+```
+\newpage
+## Data Visualization
+
+After exploring the data, it is time to visualize it.
+
+First, we can use box-and whisker plots to get a better understanding of certain variables. In this case, we are interested in the correlation between Distance and Airtime, so let's create a box-and-whisker plot for each.
+
+```{r}
+boxplot(train$Distance, data=train, horizontal=TRUE,
+        main="Distance Traveled by an Airplane",xlab="Distance (miles)")
+```
+\newpage
+```{r}
+boxplot(train$AirTime, data=train, horizontal=TRUE,
+        main="Airtime of an Airplane",xlab="Airtime (minutes)")
+```
+We can gather information on the variation in each variable using these two box-and-whisker plots. It is important to note that the data for each variable has outliers, which will affect the accuracy of the linear regression model that we create. 
+\newpage
+Using a scatter plot to plot the distance a plane travels against how much time it spends in the air shows that there is a linear correlation between the two variables.
+
+```{r scatter_plot}
+plot(train$Distance, train$AirTime, pch = 19, cex=0.75, col="blue",
+     main="Distance Traveled versus Airtime of an Airplane", 
+     xlab="Distance (miles)", ylab="Airtime (minutes)")
+```
+\newpage
+
+## Simple Linear Regression
+
+Now, let's create a simple linear regression model to show how the distance a plane travels (in miles) affects the airtime of the plane (in minutes).
+
+```{r}
+lm1 <- lm(AirTime~Distance, data=train)
+summary(lm1)
+
+```
+The summary of the linear regression model reveals that the airtime of a plane can be predicted with the following formula:
+
+airtime (in minutes) = (0.1201 * distance (in miles)) + 15.3041
+
+So for instance, if we wanted to calculate the airtime between two airports that are 879 miles away, we can use the formula to get an airtime of about 121 minutes. 
+
+airtime (in minutes) = (0.1201 * 879 miles) + 15.3041 = 120.872
+
+The Residual Standard Error (RSE) is a measure of how off the model is from the data. In this case, the RSE is around 10.81 minutes. 
+
+The R-squared value is a measure of the variance in the model explained by the predictor. The closer it is to 1, the more that the variation in airtime can be predicted by the distance the airplane travels. The R-squared value in our model is around 0.9617, which is quite high and ideal.
+
+The F-statistic considers the predictor variable to determine whether it is a significant predictor of the outcome variable. Having a F-statistic greater than 1 and a low p-value indicates that we have confidence in this model.
+
+Next, let's plot the residuals from the linear regression model. 
+
+Plot 1 (which plots Residuals vs Fitted) shows that there are equally spread residuals around a horizontal line without any distinct patterns. This is a good indication that there is not a non-linear relationship between the predictor variable and the outcome variable. 
+
+Plot 2 (which plots Normal Q-Q) shows that the residuals are normally-distributed since there is a fairly diagonal line following the dashed line.
+
+Plot 3 (which plots Scale-Location) shows a fairly horizontal line with with data points equally distributed around the line. This means the data is homoscedastic.
+
+Plot 4 (which plots Residuals vs Leverage) shows which leverage points influence the regression line. It shows outliers (which is a data point with an unusual Y value) and leverage points (which is a data point with an unusual X value).
+```{r}
+plot(lm1)
+```
+\newpage
+
+## Multiple Linear Regression
+
+Multiple Linear Regression involves multiple predictor values to predict an outcome value. In this scenario, we want to see how the distance a plane travels (in miles) and how old the plane is (in years) affect the total airtime of the plane (in minutes). 
+```{r}
+lm2 <- lm(AirTime~Distance + PlaneAge, data = train)
+summary(lm2)
+```
+The multiple linear regression model reveals that the equation to predict the airtime of a plane based off the distance the plane travels and the age of the plane is:
+
+airtime (in minutes) = (0.12023 * distance (in miles)) + (0.07494 * plane_age (in years)) + 14.47610
+
+
+Plotting the residuals show that this linear regression model fits the data well.
+
+```{r}
+plot(lm2)
+```
+
+
+Let us also see how the airtime of an airplane (in minutes) can be affected by the distance an airplane travels (in miles) along with the age of the plane (in years) along with the arrival delay of the plane (in minutes). 
+```{r}
+lm3 <- lm(AirTime~Distance + PlaneAge + ArrDelay, data=train)
+summary(lm3)
+```
+The multiple linear regression model reveals that the equation to predict the airtime of a plane based off the distance the plane travel, the age of the plane, and the arrival delay of the airplane is:
+
+airtime (in minutes) = (0.12041 * distance(in miles)) + (0.06701 * plane_age(in years)) + (0.04851 * arrival_delay(in minutes)) + 14.16348
+
+
+Plotting the residuals show that this linear regression model fits the data well.
+
+```{r}
+plot(lm3)
+```
+
+## Evaluating Results
+
+In this exercise, we created three linear regression models. lm1 sought to understand how the distance a plane travels (in miles) affects the airtime of the plane (in minutes). lm2 sought to understand how the distance a plane travels (in miles) and how old the plane is (in years) affect the total airtime of the plane (in minutes). lm3 sought to understand how the airtime of an airplane (in minutes) can be affected by the distance an airplane travels (in miles) along with the age of the plane (in years) along with the arrival delay of the plane (in minutes). Out of all of the linear regression models created, lm3 is the best model. It has the lowest RSE, the highest R-squared value, and a F-statistic greater than one combined with a low p-value. All of these statistics make it the best model to predict the airtime of an airplane with. 
+
+## Prediction and Evaluation with Test Data
+
+We can use the testing data set to evaluate our linear regression models. Calculating metrics such as correlation and mean square error (MSE) provide valuable insight into evaluation. A correlation closer to +1 would show that changes in the predictor variables lead to changes in the outcome variable. The data shows that lm3 has the highest correlation. The MSE averages the squared difference between the actual values versus the predicted values in a data set. Once again, lm3 has the lowest MSE. The reason why lm3 may have higher correlation between predictor variables and the outcome variable and also a lower MSE could be because it uses the most predictor variables to predict the outcome variable. By using more predictor variables, a linear regression model may be able to obtain a more accurate outcome variable.
+
+### For lm1:
+
+```{r}
+
+pred1 <- predict(lm1, newdata=test)
+
+```
+
+```{r}
+correlation1 <- cor(pred1, test$AirTime)
+print(paste("correlation: ", correlation1))
+
+```
+```{r}
+mse1 <- mean((pred1 - test$AirTime)^2)
+print(paste("mse: ", mse1))
+```
+
+
+```{r}
+rmse1 <- sqrt(mse1)
+print(paste("rmse: ", rmse1))
+```
+
+### For lm2:
+```{r}
+
+pred2 <- predict(lm2, newdata=test)
+
+```
+
+```{r}
+correlation2 <- cor(pred2, test$AirTime)
+print(paste("correlation: ", correlation2))
+
+```
+```{r}
+mse2 <- mean((pred2 - test$AirTime)^2)
+print(paste("mse: ", mse2))
+```
+
+```{r}
+rmse2 <- sqrt(mse2)
+print(paste("rmse: ", rmse2))
+```
+
+### For lm3:
+
+```{r}
+
+pred3 <- predict(lm3, newdata=test)
+
+```
+
+
+```{r}
+correlation3 <- cor(pred3, test$AirTime)
+print(paste("correlation: ", correlation3))
+
+```
+```{r}
+mse3 <- mean((pred3 - test$AirTime)^2)
+print(paste("mse: ", mse3))
+```
+```{r}
+rmse3 <- sqrt(mse3)
+print(paste("rmse: ", rmse3))
+```

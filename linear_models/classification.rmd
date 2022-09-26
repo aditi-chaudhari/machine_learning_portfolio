@@ -1,0 +1,157 @@
+---
+title: "Classification"
+author: "Aditi Chaudhari"
+date: "2022-09-25"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Classification
+
+Classification is a typical supervised learning task that attempts to identify what class an observation falls into. To be more precise, the linear models in classification create linear boundaries to create regions in which most observations are of the same class. An advantage to using classification algorithms is that they help classify observations when the target variable is qualitative. However, classification algorithms are disadvantaged in that they are not as useful when our target variable is quantitative. Linear regression would be more beneficial in the latter case. 
+
+## Data Exploration
+
+Let’s delve into exploring the logistic regression model!
+
+First, data from the adult.csv file is read into a data frame. The data was obtained from https://www.kaggle.com/datasets/uciml/adult-census-income?resource=download.
+
+```{r}
+df <- read.csv("adult.csv")
+```
+
+
+Firstly, let’s simply see what our data looks like using the head() function, which selects the first n rows of a
+data frame. The target variable will be income, so understanding how the data is stored in the income variable is key.
+
+```{r}
+head(df, n=10)
+```
+
+Next, let's take a look at the structure of the data frame. An important point to note is that income is of type character, but we would want it to be a factor. 
+```{r}
+str(df)
+```
+
+We can convert the income variable to be a factor using the as.factor() function. 
+```{r}
+df$income <- as.factor(df$income)
+```
+
+
+Now, we can randomly divide the data into a training set containing 80% of the original data and a test set
+containing 20% of the original data.
+```{r}
+i <- sample(1:nrow(df), nrow(df) * 0.80, replace=FALSE)
+train = df[i,]
+test <- df[-i,]
+```
+
+
+Let's take a look at the structure of the training data frame to see how the data type of the income variable has changed. It is now a factor with 2 levels, one of which is "<=50k" and the other is ">50k".
+
+```{r}
+str(train)
+```
+Using the summary() function in R provides us with summary statistics for each column. It is important to note that there are more data points in "<=50K" level than there are in the ">50k" level for the income factor. 
+
+```{r}
+summary(train)
+```
+Let's find the size of the training data set. 
+
+The nrow() function shows that there are 26,048 observations. 
+
+```{r}
+nrow(train)
+```
+The ncol() function shows that there are 15 variables
+```{r}
+ncol(train)
+```
+Using the colSums() function, we can see that there are no missing values in any of the columns. It is
+important to remove missing values prior to performing logistic regression.
+```{r}
+colSums(is.na(train))
+```
+
+## Data Visualization
+
+We can use a box-plot to visualize how age affects income. The graph below shows that <=50k is more common than >50k. More importantly, the box-plot shows that >50k observations are associated with those that are slightly older. 
+
+```{r}
+plot(train$income, train$age, data=train, main= "Age", varwidth=TRUE)
+```
+
+We can also use a conditional density plot to visualize how age affects income. The rectangle is the total probability space with the lighter grey indicating <=50k and the darker grey indication <50k.
+
+```{r}
+cdplot(train$income~train$age)
+```
+
+## Logistic Regression
+
+Let's fit a logistic regression model to the data using the glm() function. A summary of the glm model that was created reveals 4 things: the glm() call, the residual distribution, the coefficients with statistical significance metrics, and metrics for the model. The deviance residual is a mathematical transformation of the loss function and quantifies a given point's contribution to the overall likelihood. It can be used to form RSS-like statistics. We can see statistical significance metrics at the bottom of the output. The null deviance measures the lack of fit of the model only considering the intercept, whereas the residual deviance measures the lack of fit of the entire model. Since the residual deviance is lower than the null deviance, our model is a good fit. The AIC, which stands for the Akaike Information Criteria, is useful in comparing models and typically, the lower the AIC is, the better. The coefficient is 0.039647, which quantifies the difference in the log odds of a target variable.
+
+
+```{r}
+glm1 <- glm(income~age, data=train, family=binomial)
+summary(glm1)
+```
+
+## Naive Bayes Model
+Naive Bayes is another classification algorithm. The prior for income, called A-priori, below is 0.759137 for <= 50k and 0.240863 for >50k. The likelihood data is shown in the output as conditional probabilities. Discrete data, such as sex, is broken down into <=50k and >50k for each attribute. For instance, if someone is making >50k, they are 15% likely to be female or 85% likely to be male according to the Naive Bayes model shown below. For continuous variables, such as age, we are given the mean and standard deviation for the two classes. The Naive Bayes model shown below reveals that the mean age for those making <=50k is around 36, while the mean age for those making >50k is around 44. 
+
+```{r}
+library(e1071)
+nb1 <- naiveBayes(income~.,data=train)
+nb1
+
+```
+
+## Evaluating the Test Data
+
+Evaluating the logistic regression model with the test data shows a 75% accuracy. The error rate is about 25%. 
+
+```{r}
+probs <- predict(glm1, newdata=test, type="response")
+pred <- ifelse(probs>0.5, 2, 1)
+acc1 <- mean(pred==as.integer(test$income))
+print(paste("glm1 accuracy = ", acc1))
+
+```
+
+
+```{r}
+table(pred, as.integer(test$income))
+```
+A confusion matrix is created. 4829 is True Positive, in which the items are true and were classified as true. 1545 is False Positive, in which the items were false and classified as true. 117 is False Negative, in which the items were true and classified as false. Finally, 22 is True Negative, in which the items were false and classified as false. 
+
+The sensitivity, which is the true positive rate, is 97.6%. The specificity, which is the true negative rate, is approximately 1.4%.
+
+Let's now evaluate the Naive Bayes model with the test data.
+```{r}
+p2 <- predict(nb1, test)
+(tab2 <- table(p2, test$income))
+acc2= sum(diag(tab2)/sum(tab2))
+print(acc2)
+
+```
+The accuracy for Naive Bayes is about 83% and is slightly higher than the accuracy for logistic regression. The Naive Bayes model may have outperformed the logistic regression model due to the fact that Naive Bayes models tend to perform better with smaller data sets. 
+
+
+## Strengths and Weaknesses of Logistic Regression and Naive Bayes
+
+The strengths of the logistic regression model are that it separates classes decently if the classes are linearly separable, it is not computationally expensive, and it provides a nice probabilistic output. The weakness of the logistic regression model is that it is prone to underfitting. The strengths of the Naive Bayes model are that it works well with smaller data sets, its easy to implement and interpret, and it handles high dimensions well. The weaknesses for Naive Bayes are that other classifiers may outperform it for larger data sets, guesses are made for values in the test set that did not occur in the training set, and the predictors must be independent for good performance. 
+
+## Benefits and Drawbacks of Classification Metrics
+
+Classification can be evaluated using many metrics. In this notebook, we used accuracy, sensitivity, and specificity. Accuracy is the number of correct predictions divided by the total number of predictions. It is a good measure, but does not give information on the true positive rate and the true negative rate. Sensitivity gives information on the true positive rate, Specificity gives information on the true negative rate. 
+
+
+
+
+
