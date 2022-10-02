@@ -19,6 +19,11 @@ vector<vector<double>> matrix_multiplication(const vector<vector<double>> &vec1,
     int vec2_n = vec2[0].size();
 
     vector<vector<double>> result(vec1_m, vector<double> (vec2_n, 0));
+
+    // if multiplying a m by n matrix with an n by m, the n's should be equal
+    // to each other for a final matrix size of m by m....
+
+    // check to see if the matrix sizes are compatible first
     if (vec1_n != vec2_m) {
         cout << "matrix sizes not compatible" << endl;
         exit(0);
@@ -37,6 +42,7 @@ vector<vector<double>> matrix_multiplication(const vector<vector<double>> &vec1,
 
 vector<vector<double>> matrix_subtraction(const vector<vector<double>> &vec1, const vector<vector<double>> &vec2) {
     vector<vector<double>> result(vec1.size(), vector<double> (vec1[0].size(), 0));
+    // for matrix subtraction to occur, both matrices should be the same size
     if (vec1.size() == vec2.size() && vec1[0].size() == vec2[0].size()) {
         for (int i = 0; i < vec1.size(); i++) {
             for (int j = 0; j < vec1[0].size(); j++) {
@@ -90,7 +96,8 @@ vector<vector<double>> glm(vector<double> &sex, vector<double> &survived) {
         labels[i][0] = survived.at(i);
     }
 
-    // iteration (decided to iterate 5000 times as opposed to 50,000 times bc they return similar results)
+    // iteration (decided to iterate 5000 times as opposed to 50,000 times bc 5000 iterations returns good results
+    // and my poor computer struggles with 50,000 iterations)
     double learning_rate = 0.001;
     for (int i = 0; i < 5000; i++) {
         // r instruction: prob_vector <- sigmoid(data_matrix %*% weights)
@@ -120,6 +127,8 @@ vector<double> predict(vector<double> &sex, double w0, double w1) {
         double odds = exp(log_odds);
         double probability = odds / (1 + odds);
 
+        // store probabilty as 1 if it's greater than 0.5
+        // and 0 if it's less than 0.5
         if (probability > 0.50) {
             result[i] = 1;
         }
@@ -133,21 +142,30 @@ vector<double> predict(vector<double> &sex, double w0, double w1) {
 vector<double> get_confusion_matrix_elements(vector<double> sex, vector<double> survived){
     vector<double> TP_FP_TN_FN(4);
 
-    int TP = 0;
-    int FP = 0;
-    int TN = 0;
-    int FN = 0;
+    int TP = 0; // true positive
+    int FP = 0; // false positive
+    int TN = 0; // true negative
+    int FN = 0; // false negative
 
     for (int i = 0; i < sex.size(); i++) {
+        // if the model predicted a passenger survived
+        // and they did survive, increment TP
         if (sex[i] == 1 and survived[i] == 1) {
             TP++;
         }
+        // if the model predicted a passenger survived
+        // and they didn't survive, increment FP
         else if (sex[i] == 1 and survived[i] == 0) {
             FP++;
         }
+        // if the model predicted a passenger didn't survive
+        // and they did survive, increment FN
         else if (sex[i] == 0 and survived[i] == 1) {
             FN++;
         }
+
+        // if the model predicted a passenger didn't survive
+        // and they didn't survive, increment TN
         else {
             TN++;
         }
@@ -229,12 +247,11 @@ int main() {
 
     // creating a logistic regression model with training data
     // and outputting the coefficients
-
     auto start = chrono::steady_clock::now();
     vector<vector<double>> coefficients = glm(train_sex, train_survived);
     auto end = chrono::steady_clock::now();
 
-    cout << "Time taken to train the model with the training data: " << chrono::duration_cast<chrono::seconds>(end - start).count() << " seconds." << endl;
+    cout << "Time taken to train the model with the training data: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " milliseconds." << endl;
     cout << endl;
 
     cout << "Coefficient Outputs of the Logistic Regression Model: " << endl;
@@ -243,6 +260,9 @@ int main() {
     cout << "w0 (intercept): " << w0 << " , w1 (slope): " << w1 << endl;
 
     // evaluating the model with the test data
+    // (return's a vector of 0's and 1's
+    // where 0 (didn't survive) indicates a probability of <= 0.5
+    // and 1 (did survive) indicates a probability of > 0.5
     test_sex = predict(test_sex, w0, w1);
 
     // calculating & then outputting accuracy, sensitivity, and specificity
